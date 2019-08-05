@@ -1,5 +1,5 @@
 {
-  "name": "node-webvtt",
+  "name": "mconf-webvtt",
   "version": "1.5.0",
   "description": "WebVTT parser, compiler, and segmenter with HLS support",
   "main": "index.js",
@@ -18,9 +18,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/osk/node-webvtt"
+    "url": "git://github.com/pedrobmarin/mconf-webvtt"
   },
   "author": "Ólafur Sverrir Kjartansson <kjarni@gmail.com>",
+  "contributors": [
+    "Pedro Beschorner Marin <pedrobmarin@gmail.com>"
+  ],
   "license": "MIT",
   "devDependencies": {
     "chai": "^4.2.0",

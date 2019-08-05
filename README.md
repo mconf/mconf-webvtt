@@ -1,8 +1,8 @@
-# WebVTT compiler parser and segmenter
+# Mconf's WebVTT compiler parser and segmenter
+
+Based on [node-webvtt](https://github.com/osk/node-webvtt)
 
 Compiles, parses WebVTT files, segments and generates HLS playlists for them.
-
-[![CircleCI](https://circleci.com/gh/osk/node-webvtt.svg?style=svg)](https://circleci.com/gh/osk/node-webvtt)
 
 ## Usage
 
@@ -27,7 +27,7 @@ Bar
 We can parse, segment and create HLS playlists, and compile back to WebVTT format:
 
 ```javascript
-const webvtt = require('node-webvtt');
+const webvtt = require('mconf-webvtt');
 
 const segmentDuration = 10; // default to 10
 const startOffset = 0; // Starting MPEG TS offset to be used in timestamp map, default 900000
