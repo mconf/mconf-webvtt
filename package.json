@@ -1,6 +1,6 @@
 {
   "name": "mconf-webvtt",
-  "version": "1.5.0",
+  "version": "1.9.4",
   "description": "WebVTT parser, compiler, and segmenter with HLS support",
   "main": "index.js",
   "scripts": {
@@ -26,16 +26,16 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "chai": "^4.2.0",
-    "eslint": "^5.16.0",
-    "mocha": "^6.1.4",
-    "nyc": "^14.0.0"
+    "chai": "^4.3.0",
+    "eslint": "^7.20.0",
+    "mocha": "^8.3.0",
+    "nyc": "^15.1.0"
   },
   "dependencies": {
-    "commander": "^2.20.0"
+    "commander": "^7.1.0"
   },
   "engines": {
-    "node": ">= 5.4.0"
+    "node": ">= 8.16.0"
   },
   "files": [
     "/lib",

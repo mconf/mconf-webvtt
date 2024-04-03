@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+
 const chai = require('chai');
 chai.should();
 
@@ -101,6 +103,16 @@ a`;
 
     parse(input).cues[0].start.should.equal(0);
     parse(input).cues[0].end.should.equal(0.001);
+  });
+
+  it('should parse cue with long hours timestamp', () => {
+    const input = `WEBVTT
+
+10000:00:00.000 --> 10000:00:00.001
+a`;
+
+    parse(input).cues[0].start.should.equal(36000000);
+    parse(input).cues[0].end.should.equal(36000000.001);
   });
 
   it('should return parsed data about a single cue', () => {
@@ -297,6 +309,7 @@ Language: en
     const input = `WEBVTT
 Kind: captions
 Language: en
+X-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:0
 
 1
 00:00.000 --> 00:00.001`;
@@ -304,7 +317,11 @@ Language: en
 
     parse(input, options).should.have.property('valid').be.true;
     parse(input, options).should.have.property('meta').be.deep.equal(
-      { Kind: 'captions', Language: 'en' }
+      {
+        Kind: 'captions',
+        Language: 'en',
+        'X-TIMESTAMP-MAP=LOCAL': '00:00:00.000,MPEGTS:0'
+      }
     );
   });
 
@@ -318,4 +335,147 @@ Language: en
     parse(input, options).should.have.property('valid').be.true;
     parse(input, options).should.have.property('meta').be.equal(null);
   });
+
+  it('should return strict as default true', () => {
+
+    const input = `WEBVTT
+
+    1
+    00:00.000 --> 00:00.001`;
+
+    const result = parse(input);
+
+    result.should.have.property('valid').be.true;
+    result.should.have.property('strict').be.true;
+  });
+
+  it('should accept strict as an option and return it in the result', () => {
+    const options = { strict: false };
+
+    const input = `WEBVTT
+
+    1
+    00:00.000 --> 00:00.001`;
+
+    const result = parse(input, options);
+
+    result.should.have.property('valid').be.true;
+    result.should.have.property('strict').be.false;
+  });
+
+  it('should parse malformed cues if strict mode is false', () => {
+    const options = { strict: false };
+
+    const input = `WEBVTT
+
+MALFORMEDCUE -->
+This text is from a malformed cue. It should not be processed.
+
+1
+00:00.000 --> 00:00.001
+test`;
+
+    const result = parse(input, options);
+
+    result.should.have.property('valid').be.false;
+    result.should.have.property('strict').be.false;
+    result.cues.length.should.equal(1);
+    result.cues[0].start.should.equal(0);
+    result.cues[0].end.should.equal(0.001);
+    result.cues[0].text.should.equal('test');
+  });
+
+  it('should error when parsing a cue w/start end in strict', () => {
+    const input = `WEBVTT
+
+00:00.002 --> 00:00.001
+a`;
+
+    const options = { strict: false };
+
+    const result = parse(input, options);
+
+    result.should.have.property('valid').be.false;
+    result.errors.length.should.equal(1);
+    result.errors[0].message.should.equal(
+      'End must be greater or equal to start when not strict (cue #0)'
+    );
+  });
+
+  it('should parse cues w/equal start and end with strict parsing off', () => {
+    const input = `WEBVTT
+
+    230
+00:03:15.400 --> 00:03:15.400 T:5% S:20% L:70% A:middle
+Text Position: 5%
+`;
+
+    const options = { strict: false };
+
+    const result = parse(input, options);
+
+    result.should.have.property('valid').be.true;
+  });
+
+  it('should parse the acid.vtt file w/o errors w/strict parsing off', () => {
+    const input = fs.readFileSync('./test/data/acid.vtt').toString('utf8');
+
+    const options = { strict: false };
+
+    const result = parse(input, options);
+
+    result.should.have.property('valid').be.false;
+    result.errors.length.should.equal(1);
+    result.errors[0].message.should.equal('Invalid cue timestamp (cue #14)');
+  });
+
+  it('should parse cue w/o round-off', () => {
+    const input = `WEBVTT
+
+    01:24:39.06 --> 01:24:40.060
+a`;
+
+    parse(input).cues[0].start.should.equal(5079.06);
+    parse(input).cues[0].end.should.equal(5080.06);
+  });
+
+  it('should not throw unhandled error on malformed input in non strict mode',
+    () => {
+      const input = `WEBVTT FILE
+
+1096
+01:45:13.056 --> 01:45:14.390
+
+
+
+...mission.
+`;
+
+      const result = parse(input, { strict: false });
+
+      result.should.have.property('valid').be.false;
+      result.errors.length.should.equal(2);
+      result.errors[0].message.should.equal('Invalid cue timestamp (cue #1)');
+      result.errors[1].message.should.equal(
+        'Cue identifier cannot be standalone (cue #2)'
+      );
+    }
+  );
+
+  it('should throw a handled error not an unhandled one on malformed input',
+    () => {
+      const input = `WEBVTT FILE
+
+1096
+01:45:13.056 --> 01:45:14.390
+
+
+
+...mission.
+`;
+
+      (() => { parse(input); })
+        .should.throw(parserError, /Invalid cue timestamp/);
+    }
+  );
 });
