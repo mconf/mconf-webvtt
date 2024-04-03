@@ -271,6 +271,50 @@ Ta en kopp
     compile(input).should.equal(output);
   });
 
+  it('should compile with accurate milliseconds', () => {
+
+    const input = {
+      cues: [{
+        end: 1199.539,
+        identifier: '1',
+        start: 1199.529,
+        styles: '',
+        text: 'Ta en kopp varmt te.\nDet är inte varmt.'
+      }, {
+        end: 1199.549,
+        identifier: '2',
+        start: 1199.539,
+        styles: '',
+        text: 'Har en kopp te.\nDet smakar som te.'
+      }, {
+        end: 1199.558,
+        identifier: '3',
+        start: 1199.549,
+        styles: '',
+        text: 'Ta en kopp'
+      }],
+      valid: true
+    };
+    const output = `WEBVTT
+
+1
+00:19:59.529 --> 00:19:59.539
+Ta en kopp varmt te.
+Det är inte varmt.
+
+2
+00:19:59.539 --> 00:19:59.549
+Har en kopp te.
+Det smakar som te.
+
+3
+00:19:59.549 --> 00:19:59.558
+Ta en kopp
+`;
+
+    compile(input).should.equal(output);
+  });
+
   it('should round properly', () => {
 
     const input = {
@@ -404,5 +448,101 @@ Hello world
 `;
 
     compile(input).should.equal(output);
+  });
+
+  it('should compile metadata', () => {
+    const input = {
+      meta: {
+        Kind: 'captions',
+        Language: 'en',
+        'X-TIMESTAMP-MAP=LOCAL': '00:00:00.000,MPEGTS:0'
+      },
+      cues: [{
+        end: 140,
+        identifier: '1',
+        start: 135.001,
+        text: 'Hello world',
+        styles: ''
+      }],
+      valid: true
+    };
+
+    const output = `WEBVTT
+Kind: captions
+Language: en
+X-TIMESTAMP-MAP=LOCAL: 00:00:00.000,MPEGTS:0
+
+1
+00:02:15.001 --> 00:02:20.000
+Hello world
+`;
+
+    compile(input).should.equal(output);
+  });
+
+  it('should not compile non-object metadata', () => {
+    (() => {
+      compile({ meta: [], cues: [], valid: true });
+    })
+      .should.throw(compilerError, /Metadata must be an object/);
+  });
+
+  it('should not compile non-string metadata values', () => {
+    (() => {
+      compile({ meta: { foo: [] }, cues: [], valid: true });
+    })
+      .should.throw(compilerError, /Metadata value for "foo" must be string/);
+  });
+
+  it('should not compile cues in non-chronological order', () => {
+    const input = {
+      valid: true,
+      cues: [
+        {
+          identifier: '',
+          start: 30,
+          end: 31,
+          text: 'This is a subtitle',
+          styles: 'align:start line:0%'
+        },
+        {
+          identifier: '',
+          start: 0,
+          end: 1,
+          text: 'Hello world!',
+          styles: ''
+        }
+      ]
+    };
+
+    (() => { compile(input); })
+      .should.throw(compilerError,
+        /Cue number \d+ is not in chronological order/
+      );
+  });
+
+  it('should allow cues that overlap in time', () => {
+    const input = {
+      valid: true,
+      cues: [
+        {
+          identifier: '',
+          start: 1,
+          end: 5,
+          text: 'This is a subtitle',
+          styles: 'align:start line:0%'
+        },
+        {
+          identifier: '',
+          start: 3,
+          end: 7,
+          text: 'Hello world!',
+          styles: ''
+        }
+      ]
+    };
+
+    (() => { compile(input); })
+      .should.not.throw(compilerError, /Cues must be in a chronological order/);
   });
 });
